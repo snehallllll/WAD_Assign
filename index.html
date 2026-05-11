@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Registration</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: #ffffff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 30px 35px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 22px;
+      font-size: 1.4rem;
+      color: #333;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.88rem;
+      color: #555;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 9px 10px;
+      margin-bottom: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.92rem;
+      box-sizing: border-box;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: #4a90e2;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 10px;
+      background: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button[type="submit"]:hover {
+      background: #357abd;
+    }
+
+    #msg {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 0.88rem;
+      min-height: 20px;
+    }
+    #msg.success { color: green; }
+    #msg.error   { color: red; }
+
+    .view-link {
+      text-align: center;
+      margin-top: 16px;
+    }
+    .view-link a {
+      color: #4a90e2;
+      font-size: 0.88rem;
+      text-decoration: none;
+    }
+    .view-link a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>User Registration</h2>
+
+  <form id="regForm">
+    <label for="name">Full Name</label>
+    <input type="text" id="name" placeholder="Enter full name" required />
+
+    <label for="dept">Department</label>
+    <select id="dept" required>
+      <option value="">-- Select Department --</option>
+      <option>Computer Science</option>
+      <option>Information Technology</option>
+      <option>Electronics</option>
+      <option>Mechanical</option>
+      <option>Civil</option>
+      <option>MBA</option>
+    </select>
+
+    <label for="rollno">Roll No</label>
+    <input type="text" id="rollno" placeholder="e.g. CS2024001" required />
+
+    <label for="email">Email</label>
+    <input type="email" id="email" placeholder="student@college.edu" required />
+
+    <button type="submit">Register</button>
+  </form>
+
+  <div id="msg"></div>
+
+  <div class="view-link">
+    <a href="list.html">View Registered Users &rarr;</a>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'registeredUsers';
+
+  function getUsers() {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  }
+
+  function saveUsers(users) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+  }
+
+  function showMsg(text, type) {
+    const msg = document.getElementById('msg');
+    msg.textContent = text;
+    msg.className = type;
+  }
+
+  document.getElementById('regForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const name   = document.getElementById('name').value.trim();
+    const dept   = document.getElementById('dept').value;
+    const rollno = document.getElementById('rollno').value.trim();
+    const email  = document.getElementById('email').value.trim();
+
+    // Basic validation
+    if (!name || !dept || !rollno || !email) {
+      showMsg('All fields are required.', 'error');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showMsg('Enter a valid email address.', 'error');
+      return;
+    }
+
+    // Check duplicate roll no
+    const existing = getUsers();
+    if (existing.some(u => u.rollno === rollno)) {
+      showMsg('Roll No already registered.', 'error');
+      return;
+    }
+
+    const userData = {
+      id: Date.now(),
+      name, dept, rollno, email,
+      registeredAt: new Date().toLocaleString()
+    };
+
+    // AJAX POST using XMLHttpRequest
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://jsonplaceholder.typicode.com/users', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        // Push to array and save to localStorage
+        const users = getUsers();
+        users.push(userData);
+        saveUsers(users);
+
+        showMsg('Registration successful!', 'success');
+        document.getElementById('regForm').reset();
+
+        setTimeout(() => { window.location.href = 'list.html'; }, 1200);
+      } else {
+        showMsg('Server error. Try again.', 'error');
+      }
+    };
+
+    xhr.onerror = function () {
+      showMsg('Network error. Try again.', 'error');
+    };
+
+    xhr.send(JSON.stringify(userData));
+    showMsg('Submitting...', '');
+  });
+</script>
+
+</body>
+</html>
